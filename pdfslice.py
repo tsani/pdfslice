@@ -4,18 +4,36 @@ import pypdf
 import sys
 import argparse
 
-def go(DEST,SRC,START_PAGE,END_PAGE):
-    reader = pypdf.PdfReader(SRC)
+def slice(args):
+    reader = pypdf.PdfReader(args.SRC)
     writer = pypdf.PdfWriter()
-    writer.append(fileobj=reader, pages=(START_PAGE, END_PAGE))
-    writer.write(DEST)
+    writer.append(fileobj=reader, pages=(args.START_PAGE, args.END_PAGE))
+    writer.write(args.DEST)
     writer.close()
+
+def dup(args):
+    reader = pypdf.PdfReader(args.SRC)
+    writer = pypdf.PdfWriter()
+    for _ in range(args.COPIES):
+        writer.append(fileobj=reader)
+    writer.write(args.DEST)
+    writer.close()
+
+ACTIONS = { 'slice': slice, 'dup': dup }
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("DEST")
-    parser.add_argument("SRC")
-    parser.add_argument("START_PAGE", type=int)
-    parser.add_argument("END_PAGE", type=int)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    slice_parser = subparsers.add_parser("slice", help="slice a PDF")
+    slice_parser.add_argument("DEST")
+    slice_parser.add_argument("SRC")
+    slice_parser.add_argument("START_PAGE", type=int)
+    slice_parser.add_argument("END_PAGE", type=int)
+
+    dup_parser = subparsers.add_parser("dup", help="duplicate a PDF")
+    dup_parser.add_argument("DEST")
+    dup_parser.add_argument("SRC")
+    dup_parser.add_argument("COPIES", type=int)
     args = parser.parse_args()
-    go(args.DEST, args.SRC, args.START_PAGE, args.END_PAGE)
+    ACTIONS[args.command](args)
